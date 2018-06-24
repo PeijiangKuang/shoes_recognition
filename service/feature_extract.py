@@ -25,41 +25,40 @@ monkey.patch_all()
 global sess
 global logits
 global inputs
-imagenet_model_path = 'IMAGENET_MODEL_PATH'
+fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
 
 
 logging.basicConfig(level=logging.DEBUG)
-if imagenet_model_path not in os.environ:
-    logging.info('{} not in sys environ'.format(imagenet_model_path))
+if fashion_shoes_model_path not in os.environ:
+    logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
     exit(1)
 else:
-    model_path = os.environ[imagenet_model_path]
+    model_path = os.environ[fashion_shoes_model_path]
 # logging.info('loading the model from {}'.format(args.model_path))
 logging.info('loading the model from {}'.format(model_path))
 inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-    logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
+    _, _ = resnet_v1.resnet_v1_50(inputs, num_classes=9)
 saver = tf.train.Saver()
 sess = tf.Session()
 # restore
 saver.restore(sess, model_path)
+feature = sess.graph.get_tensor_by_name('resnet_v1_50/pool5:0')
 
 
-@app.route("/imagenet/predict/<x>", methods=["POST", "GET"])
-def predict(x):
+@app.route("/fashion/shoes/features/<x>", methods=["POST", "GET"])
+def extract(x):
     success = False
-    pred = "illegal api"
+    feats = "illegal api"
     if x == "url":
-        success, pred = predict_from_url(req.data)
+        success, feats = predict_from_url(req.data)
     elif x == "file":
         fp = BytesIO(req.data)
-        success, pred = predict_from_file(fp)
-        # pred = [int(p) for p in pred]
-        pred = int(pred)
+        success, feats = predict_from_file(fp)
     if success:
-        return dumps({"pred": pred})
+        return dumps({"pred": feats})
     else:
-        return dumps({"error": pred})
+        return dumps({"error": feats})
 
 
 def predict_from_url(url):
@@ -86,8 +85,9 @@ def predict_from_arr(arr):
         if arr.shape == (224, 224, 3):
             x = np.expand_dims(arr, axis=0)
             x = preprocess_input(x)
-            pred_logits = sess.run(logits, feed_dict={inputs: x})
-            y = np.argmax(pred_logits)
+            feat = sess.run(feature, feed_dict={inputs: x})
+            # y = np.argmax(pred_logits)
+            y = list([float(x) for x in feat.squeeze()])
             return True, y
         else:
             return False, "expect an array with shape (224, 224, 3)"
