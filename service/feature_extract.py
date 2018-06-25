@@ -26,6 +26,10 @@ global sess
 global logits
 global inputs
 fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
+proxies = {
+    "http": "http://10.139.11.75:80",
+    "https": "http://10.139.11.75:80"
+}
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -66,7 +70,7 @@ def extract(x):
 def predict_from_url(url):
     logging.debug("download image file from %s", url)
     try:
-        res = get(url, stream=True)
+        res = get(url, stream=True, proxies=proxies)
         fp = BytesIO(res.content)
     except:
         return False, "fail to get image from url"

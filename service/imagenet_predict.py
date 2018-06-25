@@ -26,6 +26,10 @@ global sess
 global logits
 global inputs
 imagenet_model_path = 'IMAGENET_MODEL_PATH'
+proxies = {
+    "http": "http://10.139.11.75:80",
+    "https": "http://10.139.11.75:80"
+}
 
 
 logging.basicConfig(level=logging.DEBUG)
@@ -67,7 +71,7 @@ def predict(x):
 def predict_from_url(url):
     logging.debug("download image file from %s", url)
     try:
-        res = get(url, stream=True)
+        res = get(url, stream=True, proxies=proxies)
         fp = BytesIO(res.content)
     except:
         return False, "fail to get image from url"
