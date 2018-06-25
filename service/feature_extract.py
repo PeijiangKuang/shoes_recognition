@@ -44,7 +44,7 @@ logging.info('loading the model from {}'.format(model_path))
 inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
 inputs = tf.map_fn(lambda x: tf.image.per_image_standardization(x), inputs)
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-    _, _ = resnet_v1.resnet_v1_50(inputs, num_classes=9)
+    _, _ = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
 saver = tf.train.Saver()
 sess = tf.Session()
 # restore
