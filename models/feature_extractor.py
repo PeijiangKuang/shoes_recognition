@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # graph
     inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
     with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-        logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000, is_training=False)
+        logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
     saver = tf.train.Saver()
 
     # session run
@@ -113,7 +113,7 @@ if __name__ == '__main__':
             for batch_images, batch_file_names in get_batch(files, 32):
                 feed_dict = {inputs: batch_images}
                 l = sess.run(logits, feed_dict=feed_dict)
-                pred_topN = topN(l, 3)
+                pred_topN = topN(l, 5)
                 for n, preds in zip(batch_file_names, pred_topN):
                     print('{} predicts {}'.format(n, preds))
                 print("=" * 10)

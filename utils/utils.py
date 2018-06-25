@@ -32,11 +32,10 @@ def load_imagenet_label_map():
 def topN(scores, n=3, map_dict=None):
     scores = scores.squeeze()
     ret = []
-    for i in range(scores.shape[0]):
-        sorted_list = sorted(zip(scores[i], range(scores.shape[1])), key=lambda t: t[0], reverse=True)[0:n]
-        top_index = [x[1] for x in sorted_list]
-        if map_dict:
-            ret.append([map_dict[x] for x in top_index])
-        else:
-            ret.append(top_index)
+    sorted_list = sorted(zip(scores, range(len(scores))), key=lambda t: t[0], reverse=True)[0:n]
+    top_index = [x[1] for x in sorted_list]
+    if map_dict:
+        ret.append([map_dict[x] for x in top_index])
+    else:
+        ret.append(top_index)
     return ret

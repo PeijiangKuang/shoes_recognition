@@ -29,6 +29,7 @@ imagenet_model_path = 'IMAGENET_MODEL_PATH'
 
 
 logging.basicConfig(level=logging.DEBUG)
+model_path = ''
 if imagenet_model_path not in os.environ:
     logging.info('{} not in sys environ'.format(imagenet_model_path))
     exit(1)
@@ -37,6 +38,7 @@ else:
 # logging.info('loading the model from {}'.format(args.model_path))
 logging.info('loading the model from {}'.format(model_path))
 inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
+inputs = tf.image.per_image_standardization(inputs)
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
     logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
 saver = tf.train.Saver()
@@ -85,7 +87,7 @@ def predict_from_arr(arr):
     if isinstance(arr, np.ndarray):
         if arr.shape == (224, 224, 3):
             x = np.expand_dims(arr, axis=0)
-            x = preprocess_input(x)
+            # x = preprocess_input(x)
             pred_logits = sess.run(logits, feed_dict={inputs: x})
             y = np.argmax(pred_logits)
             return True, y

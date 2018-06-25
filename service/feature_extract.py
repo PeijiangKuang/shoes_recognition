@@ -29,6 +29,7 @@ fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
 
 
 logging.basicConfig(level=logging.DEBUG)
+model_path = ''
 if fashion_shoes_model_path not in os.environ:
     logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
     exit(1)
@@ -37,6 +38,7 @@ else:
 # logging.info('loading the model from {}'.format(args.model_path))
 logging.info('loading the model from {}'.format(model_path))
 inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
+inputs = tf.image.per_image_standardization(inputs)
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
     _, _ = resnet_v1.resnet_v1_50(inputs, num_classes=9)
 saver = tf.train.Saver()
@@ -84,7 +86,7 @@ def predict_from_arr(arr):
     if isinstance(arr, np.ndarray):
         if arr.shape == (224, 224, 3):
             x = np.expand_dims(arr, axis=0)
-            x = preprocess_input(x)
+            # x = preprocess_input(x)
             feat = sess.run(feature, feed_dict={inputs: x})
             # y = np.argmax(pred_logits)
             y = list([float(x) for x in feat.squeeze()])
