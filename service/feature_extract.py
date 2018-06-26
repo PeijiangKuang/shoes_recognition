@@ -8,20 +8,19 @@ import tensorflow.contrib.slim as slim
 import os
 
 from gevent import monkey
-from gevent import wsgi
+# from gevent import wsgi
 from io import BytesIO
 from requests import get
 from flask import Flask, request as req
 from flask_cors import CORS
 from json import dumps
 from keras.preprocessing.image import load_img, img_to_array
-from keras.applications.imagenet_utils import preprocess_input
 from tensorflow.contrib.slim.nets import resnet_v1
 
 
 app = Flask(__name__)
 cors = CORS(app)
-monkey.patch_all()
+# monkey.patch_all()
 global sess
 global logits
 global inputs
@@ -33,13 +32,14 @@ proxies = {
 
 
 logging.basicConfig(level=logging.INFO)
+# model_path = '/Users/loapui/Projects/PyCharmProjects/shoes_recognition/pretrained_models/resnet_v1_50.ckpt'
 model_path = ''
 if fashion_shoes_model_path not in os.environ:
     logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
     exit(1)
 else:
     model_path = os.environ[fashion_shoes_model_path]
-# logging.info('loading the model from {}'.format(args.model_path))
+
 logging.info('loading the model from {}'.format(model_path))
 x_placeholder = tf.placeholder(tf.float32, shape=[None, None, None, 3])
 x_resize_placeholder = tf.image.resize_images(x_placeholder, size=(224, 224))
@@ -108,25 +108,13 @@ def predict_from_arr(arr):
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--bind-to", type=str, default="localhost")
-    # parser.add_argument("--port", type=int, default=50001)
-    # parser.add_argument("--model_path", type=str)
-    # args = parser.parse_args()
-
-    # logging.basicConfig(level=logging.DEBUG)
-    #
-    # logging.info('loading the model from {}'.format(args.model_path))
-    # inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
-    # with slim.arg_scope(resnet_v1.resnet_arg_scope()):
-    #     logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
-    # saver = tf.train.Saver()
-    # sess = tf.Session()
-    # # restore
-    # saver.restore(sess, args.model_path)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--bind-to", type=str, default="localhost")
+    parser.add_argument("--port", type=int, default=50001)
+    parser.add_argument("--model_path", type=str)
+    args = parser.parse_args()
 
     logging.info('starting the api')
-    # app.run(host=args.bind_to, port=args.port)
-    # server = wsgi.WSGIServer((args.bind_to, args.port), app)
-    server = wsgi.WSGIServer(('localhost', 50001), app)
-    server.serve_forever()
+    app.run(host=args.bind_to, port=args.port)
+    # server = wsgi.WSGIServer(('localhost', 50001), app)
+    # server.serve_forever()
