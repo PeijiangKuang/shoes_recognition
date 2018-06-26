@@ -41,7 +41,8 @@ else:
     model_path = os.environ[fashion_shoes_model_path]
 # logging.info('loading the model from {}'.format(args.model_path))
 logging.info('loading the model from {}'.format(model_path))
-inputs = tf.placeholder(tf.float32, shape=[None, 224, 224, 3])
+inputs = tf.placeholder(tf.float32, shape=[None, None, None, 3])
+inputs = tf.image.resize_images(inputs, size=(224, 224))
 inputs = tf.map_fn(lambda x: tf.image.per_image_standardization(x), inputs)
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
     _, _ = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
@@ -79,7 +80,8 @@ def predict_from_url(url):
 
 def predict_from_file(fp):
     try:
-        img = load_img(fp, target_size=(224, 224))
+        # img = load_img(fp, target_size=(224, 224))
+        img = load_img(fp)
         arr = img_to_array(img)
     except:
         return False, "fail to load image from data"
@@ -87,16 +89,21 @@ def predict_from_file(fp):
 
 
 def predict_from_arr(arr):
+    # if isinstance(arr, np.ndarray):
+    #     if arr.shape == (224, 224, 3):
+    #         x = np.expand_dims(arr, axis=0)
+    #         # x = preprocess_input(x)
+    #         feat = sess.run(feature, feed_dict={inputs: x})
+    #         # y = np.argmax(pred_logits)
+    #         y = list([float(x) for x in feat.squeeze()])
+    #         return True, y
+    #     else:
+    #         return False, "expect an array with shape (224, 224, 3)"
     if isinstance(arr, np.ndarray):
-        if arr.shape == (224, 224, 3):
-            x = np.expand_dims(arr, axis=0)
-            # x = preprocess_input(x)
-            feat = sess.run(feature, feed_dict={inputs: x})
-            # y = np.argmax(pred_logits)
-            y = list([float(x) for x in feat.squeeze()])
-            return True, y
-        else:
-            return False, "expect an array with shape (224, 224, 3)"
+        x = np.expand_dims(arr, axis=0)
+        feat = sess.run(feature, feed_dict={inputs: x})
+        y = list([float(x) for x in feat.squeeze()])
+        return True, y
     return False, "expect a numpy.ndarray"
 
 
