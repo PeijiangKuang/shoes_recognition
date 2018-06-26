@@ -1,5 +1,5 @@
-bind = '0.0.0.0:50002'
-workers = 2
+bind = '0.0.0.0:8080'
+workers = 20
 backlog = 2048
 worker_class = 'gevent'
 debug = True
