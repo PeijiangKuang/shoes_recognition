@@ -32,7 +32,7 @@ proxies = {
 }
 
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.info)
 model_path = ''
 if fashion_shoes_model_path not in os.environ:
     logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
