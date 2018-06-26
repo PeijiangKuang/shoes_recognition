@@ -41,9 +41,9 @@ else:
     model_path = os.environ[imagenet_model_path]
 # logging.info('loading the model from {}'.format(args.model_path))
 logging.info('loading the model from {}'.format(model_path))
-inputs = tf.placeholder(tf.float32, shape=[None, None, None, 3])
-inputs = tf.image.resize_images(inputs, size=(224, 224))
-inputs = tf.map_fn(lambda x: tf.image.per_image_standardization(x), inputs)
+x_placeholder = tf.placeholder(tf.float32, shape=[None, None, None, 3])
+x_resize_placeholder = tf.image.resize_images(x_placeholder, size=(224, 224))
+inputs = tf.map_fn(lambda x: tf.image.per_image_standardization(x), x_resize_placeholder)
 with slim.arg_scope(resnet_v1.resnet_arg_scope()):
     logits, end_points = resnet_v1.resnet_v1_50(inputs, num_classes=1000)
 saver = tf.train.Saver()
