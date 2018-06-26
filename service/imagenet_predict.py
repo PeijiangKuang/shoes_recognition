@@ -101,7 +101,7 @@ def predict_from_arr(arr):
     #         return False, "expect an array with shape (224, 224, 3)"
     if isinstance(arr, np.ndarray):
         x = np.expand_dims(arr, axis=0)
-        pred_logits = sess.run(logits, feed_dict={inputs: x})
+        pred_logits = sess.run(logits, feed_dict={x_placeholder: x})
         y = np.argmax(pred_logits)
         return True, y
     return False, "expect a numpy.ndarray"
