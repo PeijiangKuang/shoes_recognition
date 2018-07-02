@@ -5,6 +5,9 @@ import logging
 import numpy as np
 import keras
 
+import os
+# from gevent import monkey
+# from gevent import wsgi
 from io import BytesIO
 from requests import get
 from flask import Flask, request as req
@@ -26,21 +29,21 @@ global feature_datagen
 # global inputs
 fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
 proxies = {
-    # "http": "http://10.139.11.75:80",
-    # "https": "http://10.139.11.75:80"
-    "http": "http://dev-proxy.oa.com:8080",
-    "https": "http://dev-proxy.oa.com:8080"
+    "http": "http://10.139.11.75:80",
+    "https": "http://10.139.11.75:80"
+    # "http": "http://dev-proxy.oa.com:8080",
+    # "https": "http://dev-proxy.oa.com:8080"
 }
 
 
 logging.basicConfig(level=logging.INFO)
-model_path = '/Users/loapui/models/own_model.h5'
-# model_path = ''
-# if fashion_shoes_model_path not in os.environ:
-#     logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
-#     exit(1)
-# else:
-#     model_path = os.environ[fashion_shoes_model_path]
+# model_path = '/Users/loapui/models/own_model.h5'
+model_path = ''
+if fashion_shoes_model_path not in os.environ:
+    logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
+    exit(1)
+else:
+    model_path = os.environ[fashion_shoes_model_path]
 
 logging.info('load mobilenet with params from {}'.format(model_path))
 with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
