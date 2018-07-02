@@ -3,11 +3,12 @@
 import argparse
 import logging
 import numpy as np
-import keras
-
 import os
-# from gevent import monkey
-# from gevent import wsgi
+import tensorflow as tf
+
+from keras import applications
+from gevent import monkey
+from gevent import wsgi
 from io import BytesIO
 from requests import get
 from flask import Flask, request as req
@@ -21,10 +22,11 @@ from keras.preprocessing import image
 
 app = Flask(__name__)
 cors = CORS(app)
-# monkey.patch_all()
+monkey.patch_all()
 global model
 global feature_model
 global feature_datagen
+global graph
 # global logits
 # global inputs
 fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
@@ -46,12 +48,14 @@ else:
     model_path = os.environ[fashion_shoes_model_path]
 
 logging.info('load mobilenet with params from {}'.format(model_path))
-with CustomObjectScope({'relu6': keras.applications.mobilenet.relu6,
-                        'DepthwiseConv2D': keras.applications.mobilenet.DepthwiseConv2D}):
+with CustomObjectScope({'relu6': applications.mobilenet.relu6,
+                        'DepthwiseConv2D': applications.mobilenet.DepthwiseConv2D}):
     model = load_model(model_path)
 
 feature_model = Model(inputs=model.input, outputs=model.get_layer('logits').output)
 feature_datagen = image.ImageDataGenerator(rescale=1./255)
+graph = tf.get_default_graph()
+logging.info('starting the api')
 
 # logging.info('loading the model from {}'.format(model_path))
 # x_placeholder = tf.placeholder(tf.float32, shape=[None, None, None, 3])
@@ -115,11 +119,12 @@ def predict_from_arr(arr):
     if isinstance(arr, np.ndarray):
         x = np.expand_dims(arr, axis=0)
         # feat = sess.run(feature, feed_dict={x_placeholder: x})
-        for run in range(1):
-            for batch_x, _ in feature_datagen.flow(x, [0], batch_size=1):
-                feat = feature_model.predict(batch_x)
-                y = list([float(x) for x in feat.squeeze()])
-                break
+        with graph.as_default():
+            for run in range(1):
+                for batch_x, _ in feature_datagen.flow(x, [0], batch_size=1):
+                    feat = feature_model.predict(batch_x)
+                    y = list([float(x) for x in feat.squeeze()])
+                    break
         return True, y
     return False, "expect a numpy.ndarray"
 
@@ -132,6 +137,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logging.info('starting the api')
-    app.run(host=args.bind_to, port=args.port)
-    # server = wsgi.WSGIServer(('localhost', 50001), app)
-    # server.serve_forever()
+    # app.run(host=args.bind_to, port=args.port)
+    server = wsgi.WSGIServer(('localhost', 50001), app)
+    server.serve_forever()
