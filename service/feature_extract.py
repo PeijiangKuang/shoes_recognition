@@ -37,6 +37,15 @@ proxies = {
     # "https": "http://dev-proxy.oa.com:8080"
 }
 
+# RETURN
+RET = {
+    'GetUrlFail': -1,
+    'GetFileFail': -2,
+    'NotExpectInputType': -3,
+    'IllegalApi': -4,
+    'OK': 0
+}
+
 
 logging.basicConfig(level=logging.INFO)
 # model_path = '/Users/loapui/models/own_model.h5'
@@ -72,26 +81,30 @@ logging.info('starting the api')
 
 @app.route("/fashion/shoes/features/<x>", methods=["POST", "GET"])
 def extract(x):
-    success = False
+    ret_code = RET['IllegalApi']
     feats = "illegal api"
     if x == "url":
-        success, feats = predict_from_url(req.data)
+        ret_code, feats = predict_from_url(req.data)
     elif x == "file":
         fp = BytesIO(req.data)
-        success, feats = predict_from_file(fp)
-    if success:
-        return dumps({"pred": feats})
-    else:
-        return dumps({"error": feats})
+        ret_code, feats = predict_from_file(fp)
+
+    response = {'ret': ret_code,
+                'msg': feats}
+    return dumps(response)
+    # if success == 0:
+    #     return dumps({"pred": feats})
+    # else:
+    #     return dumps({"error": feats})
 
 
 def predict_from_url(url):
     logging.debug("download image file from %s", url)
     try:
-        res = get(url, stream=True, proxies=proxies)
+        res = get(url, stream=True, timeout=300.0/1000)
         fp = BytesIO(res.content)
     except:
-        return False, "fail to get image from url"
+        return RET['GetUrlFail'], "fail to get image from url"
     return predict_from_file(fp)
 
 
@@ -101,7 +114,7 @@ def predict_from_file(fp):
         img = load_img(fp, target_size=(224, 224))
         arr = img_to_array(img)
     except:
-        return False, "fail to load image from data"
+        return RET['GetFileFail'], "fail to load image from data"
     return predict_from_arr(arr)
 
 
@@ -125,8 +138,8 @@ def predict_from_arr(arr):
                     feat = feature_model.predict(batch_x)
                     y = list([float(x) for x in feat.squeeze()])
                     break
-        return True, y
-    return False, "expect a numpy.ndarray"
+        return RET['OK'], y
+    return RET['NotExpectInputType'], "expect a numpy.ndarray"
 
 
 if __name__ == "__main__":
