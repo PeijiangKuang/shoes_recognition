@@ -43,11 +43,12 @@ RET = {
     'GetFileFail': -2,
     'NotExpectInputType': -3,
     'IllegalApi': -4,
+    'Crash': -5,
     'OK': 0
 }
 
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.ERROR)
 # model_path = '/Users/loapui/models/own_model.h5'
 model_path = ''
 if fashion_shoes_model_path not in os.environ:
@@ -79,15 +80,48 @@ logging.info('starting the api')
 # feature = sess.graph.get_tensor_by_name('resnet_v1_50/pool5:0')
 
 
+@app.errorhandler(403)
+def page_not_found():
+    return "403", "page_not_found"
+
+
+@app.errorhandler(404)
+def page_not_found(error):
+    return "404", "page_not_found"
+
+
+@app.errorhandler(400)
+def page_not_found(error):
+    return "400", "page_not_found"
+
+
+@app.errorhandler(410)
+def page_not_found(error):
+    return "410", "page_not_found"
+
+
+@app.errorhandler(500)
+def page_not_found(error):
+    return "500", "page_not_found"
+
+
 @app.route("/fashion/shoes/features/<x>", methods=["POST", "GET"])
 def extract(x):
     ret_code = RET['IllegalApi']
     feats = "illegal api"
-    if x == "url":
-        ret_code, feats = predict_from_url(req.data)
-    elif x == "file":
-        fp = BytesIO(req.data)
-        ret_code, feats = predict_from_file(fp)
+    if req.method == 'GET':
+        print(req.args.get('data'))
+        if x == "url":
+            ret_code, feats = predict_from_url(req.args.get('data'))
+        elif x == "file":
+            fp = BytesIO(req.args.get('data'))
+            ret_code, feats = predict_from_file(fp)
+    else:
+        if x == "url":
+            ret_code, feats = predict_from_url(req.data)
+        elif x == "file":
+            fp = BytesIO(req.data)
+            ret_code, feats = predict_from_file(fp)
 
     response = {'ret': ret_code,
                 'msg': feats}
@@ -101,9 +135,10 @@ def extract(x):
 def predict_from_url(url):
     logging.debug("download image file from %s", url)
     try:
-        res = get(url, stream=True, timeout=300.0/1000)
+        res = get(url, stream=True, timeout=200.0/1000)
         fp = BytesIO(res.content)
     except:
+        logging.error("fail to get image from url {}".format(url))
         return RET['GetUrlFail'], "fail to get image from url"
     return predict_from_file(fp)
 
@@ -114,6 +149,7 @@ def predict_from_file(fp):
         img = load_img(fp, target_size=(224, 224))
         arr = img_to_array(img)
     except:
+        logging.error("fail to load image from data")
         return RET['GetFileFail'], "fail to load image from data"
     return predict_from_arr(arr)
 
@@ -129,17 +165,22 @@ def predict_from_arr(arr):
     #         return True, y
     #     else:
     #         return False, "expect an array with shape (224, 224, 3)"
-    if isinstance(arr, np.ndarray):
-        x = np.expand_dims(arr, axis=0)
-        # feat = sess.run(feature, feed_dict={x_placeholder: x})
-        with graph.as_default():
-            for run in range(1):
-                for batch_x, _ in feature_datagen.flow(x, [0], batch_size=1):
-                    feat = feature_model.predict(batch_x)
-                    y = list([float(x) for x in feat.squeeze()])
-                    break
-        return RET['OK'], y
-    return RET['NotExpectInputType'], "expect a numpy.ndarray"
+    try:
+        if isinstance(arr, np.ndarray):
+            x = np.expand_dims(arr, axis=0)
+            # feat = sess.run(feature, feed_dict={x_placeholder: x})
+            with graph.as_default():
+                for run in range(1):
+                    for batch_x, _ in feature_datagen.flow(x, [0], batch_size=1):
+                        feat = feature_model.predict(batch_x)
+                        y = list([float(x) for x in feat.squeeze()])
+                        break
+            return RET['OK'], y
+        logging.error("expect a numpy.ndarray")
+        return RET['NotExpectInputType'], "expect a numpy.ndarray"
+    except:
+        logging.error("crash when predicting")
+        return RET['Crash'], "crash when predicting"
 
 
 if __name__ == "__main__":
