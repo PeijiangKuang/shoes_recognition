@@ -48,16 +48,21 @@ RET = {
 }
 
 
-logging.basicConfig(level=logging.ERROR)
+# logging.basicConfig(level=logging.ERROR)
+handler = logging.FileHandler('../logs/flask.log', encoding='UTF-8')
+handler.setLevel(logging.ERROR)
+logging_format = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s - %(funcName)s - %(lineno)s - %(message)s')
+handler.setFormatter(logging_format)
+app.logger.addHandler(handler)
 # model_path = '/Users/loapui/models/own_model.h5'
 model_path = ''
 if fashion_shoes_model_path not in os.environ:
-    logging.info('{} not in sys environ'.format(fashion_shoes_model_path))
+    app.logger.error('{} not in sys environ'.format(fashion_shoes_model_path))
     exit(1)
 else:
     model_path = os.environ[fashion_shoes_model_path]
 
-logging.info('load mobilenet with params from {}'.format(model_path))
+app.logger.error('load mobilenet with params from {}'.format(model_path))
 with CustomObjectScope({'relu6': applications.mobilenet.relu6,
                         'DepthwiseConv2D': applications.mobilenet.DepthwiseConv2D}):
     model = load_model(model_path)
@@ -65,7 +70,7 @@ with CustomObjectScope({'relu6': applications.mobilenet.relu6,
 feature_model = Model(inputs=model.input, outputs=model.get_layer('logits').output)
 feature_datagen = image.ImageDataGenerator(rescale=1./255)
 graph = tf.get_default_graph()
-logging.info('starting the api')
+app.logger.error('starting the api')
 
 # logging.info('loading the model from {}'.format(model_path))
 # x_placeholder = tf.placeholder(tf.float32, shape=[None, None, None, 3])
@@ -133,12 +138,12 @@ def extract(x):
 
 
 def predict_from_url(url):
-    logging.debug("download image file from %s", url)
+    app.logger.debug("download image file from %s", url)
     try:
         res = get(url, stream=True, timeout=200.0/1000)
         fp = BytesIO(res.content)
     except:
-        logging.error("fail to get image from url {}".format(url))
+        app.logger.error("fail to get image from url {}".format(url))
         return RET['GetUrlFail'], "fail to get image from url"
     return predict_from_file(fp)
 
@@ -149,7 +154,7 @@ def predict_from_file(fp):
         img = load_img(fp, target_size=(224, 224))
         arr = img_to_array(img)
     except:
-        logging.error("fail to load image from data")
+        app.logger.error("fail to load image from data")
         return RET['GetFileFail'], "fail to load image from data"
     return predict_from_arr(arr)
 
@@ -176,10 +181,10 @@ def predict_from_arr(arr):
                         y = list([float(x) for x in feat.squeeze()])
                         break
             return RET['OK'], y
-        logging.error("expect a numpy.ndarray")
+        app.logger.error("expect a numpy.ndarray")
         return RET['NotExpectInputType'], "expect a numpy.ndarray"
     except:
-        logging.error("crash when predicting")
+        app.logger.error("crash when predicting")
         return RET['Crash'], "crash when predicting"
 
 
@@ -190,7 +195,7 @@ if __name__ == "__main__":
     # parser.add_argument("--model_path", type=str)
     args = parser.parse_args()
 
-    logging.info('starting the api')
+    app.logger.error('starting the api')
     # app.run(host=args.bind_to, port=args.port)
     server = wsgi.WSGIServer(('localhost', 50001), app)
     server.serve_forever()
