@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import os
 import tensorflow as tf
+import requests
 
 from keras import applications
 from gevent import monkey
@@ -24,6 +25,7 @@ app = Flask(__name__)
 cors = CORS(app)
 monkey.patch_all()
 fashion_shoes_model_path = 'FASHION_SHOES_MODEL_PATH'
+get_url_timeout = 'get_url_timeout'
 
 # RETURN
 RET = {
@@ -42,6 +44,14 @@ logging_format = logging.Formatter('%(asctime)s - %(levelname)s - %(filename)s' 
                                    ' - %(funcName)s - %(lineno)s - %(message)s')
 handler.setFormatter(logging_format)
 app.logger.addHandler(handler)
+
+timeout = 0.0
+if get_url_timeout not in os.environ:
+    app.logger.error('{} not in sys environ'.format(get_url_timeout))
+    exit(1)
+else:
+    timeout = int(os.environ[get_url_timeout]) * 1.0 / 1000.0
+
 model_path = ''
 if fashion_shoes_model_path not in os.environ:
     app.logger.error('{} not in sys environ'.format(fashion_shoes_model_path))
@@ -92,7 +102,7 @@ def extract(x):
     ret_code = RET['IllegalApi']
     feats = "illegal api"
     if req.method == 'GET':
-        print(req.args.get('data'))
+        # print(req.args.get('data'))
         if x == "url":
             ret_code, feats = predict_from_url(req.args.get('data'))
         elif x == "file":
@@ -112,8 +122,11 @@ def extract(x):
 
 def predict_from_url(url):
     try:
-        res = get(url, stream=True, timeout=200.0/1000)
+        res = get(url, stream=True, timeout=timeout)
         fp = BytesIO(res.content)
+    except requests.Timeout:
+        app.logger.error("fail to get image from url {} using timeout:{}".format(url, timeout))
+        return RET['GetUrlFail'], "get image from url timeout"
     except:
         app.logger.error("fail to get image from url {}".format(url))
         return RET['GetUrlFail'], "fail to get image from url"
